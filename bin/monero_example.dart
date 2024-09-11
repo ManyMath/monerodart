@@ -1,4 +1,4 @@
-import 'package:xmrdart/monero.dart' as libxmr;
+import 'package:monero/monero.dart' as libxmr;
 
 void main() {
   // Test vector from https://xmrtests.llcoins.net/addresstests.html
