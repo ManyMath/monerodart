@@ -1,5 +1,5 @@
 name: monero
-description: Monero in Dart.
+description: Monero Dart SDK.
 version: 0.0.1
 repository: https://github.com/ManyMath/monerodart
 

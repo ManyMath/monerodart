@@ -1,4 +1,4 @@
-@ffi.DefaultAsset('package:xmrdart/libxmr')
+@ffi.DefaultAsset('package:monero/libxmr')
 library rust;
 
 import 'dart:ffi' as ffi;

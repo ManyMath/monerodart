@@ -1,4 +1,4 @@
-# `xmrdart`
+# `monero`
 
 ## Setup
 
@@ -15,11 +15,11 @@ See [this tracking issue](https://github.com/flutter/flutter/issues/129757) and 
 ### Quick setup
 
 ```
-git clone git@github.com:ManyMath/xmrdart
-cd xmrdart
+git clone git@github.com:ManyMath/monerodart
+cd monerodart
 git submodule update --init --recursive
 dart pub get
-dart --enable-experiment=native-assets run bin/xmrdart_example.dart
+dart --enable-experiment=native-assets run bin/monero_example.dart
 ```
 <!--- TODO: Remove the `git submodule update --init --recursive` step after libxmr transitions from monero-serai to monero-wallet. --->
 and wait a moment as the native assets are built.
