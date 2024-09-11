@@ -1,0 +1,26 @@
+[package]
+name = "libxmr"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "libxmr"
+path = "src/main.rs"
+
+[lib]
+name = "libxmr"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+monero-serai = { version = "0.1.4-alpha", path = "src/serai/coins/monero" }
+rand_core = "0.6.4"
+zeroize = "1.6.0"
+curve25519-dalek = { version = "^3.2", features = ["std"] }
+sha3 = "0.10.8"
+monero-generators = { version = "0.3.0", path = "src/serai/coins/monero/generators" }
+hex = "0.4.3"
+tokio = { version = "1.29.1", features = ["full"] }
+
+[build-dependencies]
+cbindgen = "0.24.0"
