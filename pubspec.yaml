@@ -4,7 +4,7 @@ version: 0.0.1
 repository: https://github.com/ManyMath/monerodart
 
 environment:
-  sdk: ^3.5.0-90.0.dev
+  sdk: ^3.6.0-0
 
 dependencies:
   native_toolchain_rust: ^0.1.0-dev.7
