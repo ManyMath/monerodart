@@ -277,6 +277,7 @@ dependencies = [
 [[package]]
 name = "dalek-ff-group"
 version = "0.3.0"
+source = "git+https://github.com/serai-dex/serai.git?rev=fca567f61d36360b36c153819c98bccbe09d858b#fca567f61d36360b36c153819c98bccbe09d858b"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek",
@@ -857,6 +858,7 @@ dependencies = [
 [[package]]
 name = "monero-generators"
 version = "0.3.0"
+source = "git+https://github.com/serai-dex/serai.git?rev=fca567f61d36360b36c153819c98bccbe09d858b#fca567f61d36360b36c153819c98bccbe09d858b"
 dependencies = [
  "curve25519-dalek",
  "dalek-ff-group",
@@ -870,6 +872,7 @@ dependencies = [
 [[package]]
 name = "monero-serai"
 version = "0.1.4-alpha"
+source = "git+https://github.com/serai-dex/serai.git?rev=fca567f61d36360b36c153819c98bccbe09d858b#fca567f61d36360b36c153819c98bccbe09d858b"
 dependencies = [
  "async-trait",
  "base58-monero",
@@ -900,6 +903,7 @@ dependencies = [
 [[package]]
 name = "multiexp"
 version = "0.3.1"
+source = "git+https://github.com/serai-dex/serai.git?rev=fca567f61d36360b36c153819c98bccbe09d858b#fca567f61d36360b36c153819c98bccbe09d858b"
 dependencies = [
  "ff",
  "group",
@@ -1374,6 +1378,7 @@ dependencies = [
 [[package]]
 name = "std-shims"
 version = "0.1.0"
+source = "git+https://github.com/serai-dex/serai.git?rev=fca567f61d36360b36c153819c98bccbe09d858b#fca567f61d36360b36c153819c98bccbe09d858b"
 dependencies = [
  "hashbrown 0.13.2",
 ]
