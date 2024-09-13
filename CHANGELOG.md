@@ -1,3 +1,9 @@
-## 1.0.0
+## 0.0.2
+
+- Migrated from libxmr to the new standalone monero-rust crate.
+
+## 0.0.1
 
 - Initial version.
+- A proof of concept of building a Rust library with native_toolchain_rust for use in a Dart app.
+- Uses cypherstack/libxmr's libxmr crate as the Rust library.
