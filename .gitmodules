@@ -1,0 +1,3 @@
+[submodule "monero-rust"]
+	path = monero-rust
+	url = git@github.com:ManyMath/monero-rust

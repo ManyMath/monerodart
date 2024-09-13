@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
-import 'libxmr_bindings_generated.dart';
+import 'monero-rust_bindings_generated.dart';
 
-const String _libName = 'libxmr';
+const String _libName = 'monero_rust';
 
 /// The dynamic library in which the symbols for [LibxmrBindings] can be found.
 final DynamicLibrary _dylib = () {
@@ -14,10 +14,10 @@ final DynamicLibrary _dylib = () {
         'rust/target/release/$_libName.framework/lib$_libName');
   }
   if (Platform.isAndroid || Platform.isLinux) {
-    return DynamicLibrary.open('rust/target/release/lib$_libName.so');
+    return DynamicLibrary.open('monero-rust/target/release/lib$_libName.so');
   }
   if (Platform.isWindows) {
-    return DynamicLibrary.open('rust/target/release/lib$_libName.dll');
+    return DynamicLibrary.open('monero-rust/target/release/lib$_libName.dll');
   }
   throw UnsupportedError('Unknown platform: ${Platform.operatingSystem}');
 }();

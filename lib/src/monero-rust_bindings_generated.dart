@@ -8,7 +8,7 @@
 // ignore_for_file: type=lint
 import 'dart:ffi' as ffi;
 
-/// Bindings for `libxmr_bindings.h`.
+/// Bindings for `monero-rust.h`.
 ///
 /// Regenerate bindings with `flutter pub run ffigen --config ffigen.yaml`.
 ///

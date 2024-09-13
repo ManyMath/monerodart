@@ -26,7 +26,9 @@ and wait a moment as the native assets are built.
 
 ## Development
 
-- Install `cbindgen`: `cargo install --force cbindgen`.
-- To generate `libxmr_bindings.h` C bindings for Rust, use `cbindgen` in the `rust` directory: `cbindgen --config cbindgen.toml --crate libxmr --output libxmr_bindings.h`.
-- To generate `libxmr_bindings_generated.dart` Dart bindings for C: `dart run ffigen --config ffigen.yaml`.
-- If bindings are generated for a new (not previously supported/included in `lib/xmrdart_base.dart`) function, a wrapper function for it must be written by hand (see: `generateMnemonic`, `generateAddress`).
+- To generate `monero-rust_bindings_generated.dart` Dart bindings for C:
+  ```
+  dart run ffigen --config ffigen.yaml
+  ```
+- If bindings are generated for a new (not previously supported/included in `lib/monero_base.dart`) 
+  function, a wrapper must be written for it by hand (see: `generateMnemonic`, `generateAddress`).

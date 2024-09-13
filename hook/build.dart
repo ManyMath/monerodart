@@ -8,7 +8,7 @@ void main(List<String> args) async {
     await build(args, (BuildConfig buildConfig, BuildOutput output) async {
       final builder = RustBuilder(
         package: 'monero',
-        cratePath: 'rust',
+        cratePath: 'monero_rust',
         buildConfig: buildConfig,
       );
       await builder.run(output: output);
