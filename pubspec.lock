@@ -46,14 +46,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
-  cli_config:
-    dependency: transitive
-    description:
-      name: cli_config
-      sha256: ac20a183a07002b700f0c25e61b7ee46b23c309d76ab7b7640a028f18e4d99ec
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   cli_util:
     dependency: transitive
     description:
@@ -134,14 +126,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
-  http:
-    dependency: transitive
-    description:
-      name: http
-      sha256: b9c29a161230ee03d3ccf545097fccd9b87a5264228c5d348202e0f0c28f9010
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.2.2"
   http_multi_server:
     dependency: transitive
     description:
@@ -222,30 +206,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.6"
-  native_assets_cli:
-    dependency: "direct main"
-    description:
-      name: native_assets_cli
-      sha256: "1ff032c0ca050391c4c5107485f1a26e0e95cee18d1fdb2b7bdbb990efd3c188"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.3"
-  native_toolchain_rust:
-    dependency: "direct main"
-    description:
-      name: native_toolchain_rust
-      sha256: ab84799acd3f353dd3c57aaf3e9e4da68c1391fb3049adf2981be50a0f58a090
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0-dev.7"
-  native_toolchain_rust_common:
-    dependency: transitive
-    description:
-      name: native_toolchain_rust_common
-      sha256: "0d23d87dcab2430d55f27ef122d30112d96dea72ef1ea69d0ecc32fcb3040028"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0-dev.3"
   node_preamble:
     dependency: transitive
     description:
@@ -270,22 +230,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.0"
-  petitparser:
-    dependency: transitive
-    description:
-      name: petitparser
-      sha256: c15605cd28af66339f8eb6fbe0e541bfe2d1b72d5825efc6598f3e0a31b9ad27
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.2"
-  platform:
-    dependency: transitive
-    description:
-      name: platform
-      sha256: "9b71283fc13df574056616011fb138fd3b793ea47cc509c189a6c3fa5f8a1a65"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.5"
   pool:
     dependency: transitive
     description:
@@ -294,14 +238,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.1"
-  process:
-    dependency: transitive
-    description:
-      name: process
-      sha256: "21e54fd2faf1b5bdd5102afd25012184a6793927648ea81eea80552ac9405b32"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.0.2"
   pub_semver:
     dependency: transitive
     description:
@@ -318,14 +254,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.2"
-  rustup:
-    dependency: transitive
-    description:
-      name: rustup
-      sha256: b7e6d9036ac11d924b9ddd3a99d1a16a91b3c8fce9d4521a883e894165f4a26c
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0-dev.6"
   shelf:
     dependency: transitive
     description:
@@ -438,14 +366,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.5"
-  toml:
-    dependency: transitive
-    description:
-      name: toml
-      sha256: "9968de24e45b632bf1a654fe1ac7b6fe5261c349243df83fd262397799c45a2d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.15.0"
   typed_data:
     dependency: transitive
     description:
