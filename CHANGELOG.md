@@ -1,3 +1,7 @@
+## 0.0.3
+
+- native_toolchain_rust fixes: using native_toolchain_rust_mirror until its parent merges lib fixes.
+
 ## 0.0.2
 
 - Migrated from libxmr to the new standalone monero-rust crate.
