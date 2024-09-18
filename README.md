@@ -1,18 +1,9 @@
 # `monero`
 
-## Setup
+## Getting started
 
-### Native assets
-
-Native assets is currently an experimental feature that is available in Flutter's `master` branch behind an optional Flutter config:
-
-```
-flutter config --enable-native-assets
-```
-
-See [this tracking issue](https://github.com/flutter/flutter/issues/129757) and [this milestone](https://github.com/dart-lang/native/milestone/15) for the eventual inclusion of native assets in a release.
-
-### Quick setup
+Make sure to have Rust installed via [`rustup`](https://rustup.rs/).
+<!--- TODO: Add minimum Rust toolchain version. --->
 
 ```
 git clone git@github.com:ManyMath/monerodart
@@ -26,6 +17,10 @@ and wait a moment as the native assets are built.
 
 ## Development
 
+- To update Cargokit:
+  ```
+  git subtree pull --prefix cargokit https://github.com/irondash/cargokit.git main --squash
+  ```
 - To generate `monero-rust_bindings_generated.dart` Dart bindings for C:
   ```
   dart run ffigen --config ffigen.yaml
