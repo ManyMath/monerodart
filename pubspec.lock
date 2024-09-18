@@ -233,10 +233,11 @@ packages:
   native_toolchain_rust:
     dependency: "direct main"
     description:
-      name: native_toolchain_rust
-      sha256: ab84799acd3f353dd3c57aaf3e9e4da68c1391fb3049adf2981be50a0f58a090
-      url: "https://pub.dev"
-    source: hosted
+      path: native_toolchain_rust
+      ref: "7c64dbe21280c3fb39d85cb1073063f078897a3b"
+      resolved-ref: "7c64dbe21280c3fb39d85cb1073063f078897a3b"
+      url: "https://github.com/ManyMath/native_toolchain_rust"
+    source: git
     version: "0.1.0-dev.7"
   native_toolchain_rust_common:
     dependency: transitive

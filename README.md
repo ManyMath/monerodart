@@ -28,7 +28,7 @@ and wait a moment as the native assets are built.
 
 - To generate `monero-rust_bindings_generated.dart` Dart bindings for C:
   ```
-  dart run ffigen --config ffigen.yaml
+  dart --enable-experiment=native-assets run ffigen --config ffigen.yaml
   ```
 - If bindings are generated for a new (not previously supported/included in `lib/monero_base.dart`) 
   function, a wrapper must be written for it by hand (see: `generateMnemonic`, `generateAddress`).
