@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:native_assets_cli/native_assets_cli.dart';
-import 'package:native_toolchain_rust/native_toolchain_rust.dart';
+import 'package:native_toolchain_rust_mirror/native_toolchain_rust.dart';
 
 void main(List<String> args) async {
   try {
