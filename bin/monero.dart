@@ -119,6 +119,13 @@ Future<void> downloadLatestRelease(String binariesPath,
         // Verify the file's hash for integrity
         String? expectedHash = releaseHashes[p.basename(existingArchive.path)];
         await verifyFileHash(existingArchive.path, expectedHash, autoMode);
+
+        // Ask if the user wants to extract the archive, even if it already exists
+        if (await promptYesNo(
+            'The archive is already downloaded. Do you want to extract the archive? [y/N]')) {
+          await extractArchive(
+              existingArchive.path, binariesPath, defaultFileName);
+        }
         return;
       }
 
@@ -186,12 +193,60 @@ Future<void> downloadFile(String url, String binariesPath,
 
       String? expectedHash = releaseHashes[fileName];
       await verifyFileHash(filePath, expectedHash, autoMode);
+
+      // Ask if the user wants to extract the archive after verification
+      if (await promptYesNo('Do you want to extract the archive? [y/N]')) {
+        await extractArchive(filePath, binariesPath, fileName);
+      }
     },
     onError: (e) {
       print('\nAn error occurred while downloading the file: $e');
     },
     cancelOnError: true,
   );
+}
+
+Future<void> extractArchive(
+    String filePath, String extractPath, String fileName) async {
+  final archiveExtension = p.extension(fileName);
+  try {
+    if (archiveExtension == '.zip') {
+      await _extractZip(filePath, extractPath);
+    } else if (archiveExtension == '.bz2') {
+      await _extractTarBz2(filePath, extractPath);
+    } else {
+      print('Unsupported archive format: $archiveExtension');
+      return;
+    }
+  } catch (e) {
+    print('An error occurred while extracting the archive: $e');
+  }
+}
+
+Future<void> _extractZip(String zipFilePath, String extractPath) async {
+  print('Extracting zip archive: $zipFilePath...');
+  // Use the `unzip` command with `-o` to overwrite files
+  final result =
+      await Process.run('unzip', ['-o', zipFilePath, '-d', extractPath]);
+
+  if (result.exitCode == 0) {
+    print('Extraction completed successfully.');
+  } else {
+    print('Failed to extract zip archive: ${result.stderr}');
+  }
+}
+
+Future<void> _extractTarBz2(String tarFilePath, String extractPath) async {
+  print('Extracting tar.bz2 archive: $tarFilePath...');
+  // Use the `tar` command with `-xjf` to extract and `--overwrite` to overwrite files
+  final result = await Process.run(
+      'tar', ['-xjf', tarFilePath, '-C', extractPath, '--overwrite']);
+
+  if (result.exitCode == 0) {
+    print('Extraction completed successfully.');
+  } else {
+    print('Failed to extract tar.bz2 archive: ${result.stderr}');
+  }
 }
 
 Future<void> verifyFileHash(
@@ -207,12 +262,12 @@ Future<void> verifyFileHash(
   } else {
     print(
         'Hash mismatch for $filePath. Expected: $expectedHash, Actual: $actualHash');
-    if (!autoMode &&
-        await promptYesNo(
-            'Would you like to delete the corrupted file? [y/N]')) {
-      await File(filePath).delete();
-      print('Corrupted file deleted.');
-    }
+    // if (!autoMode &&
+    //     await promptYesNo(
+    //         'Would you like to delete the corrupted file? [y/N]')) {
+    //   await File(filePath).delete();
+    //   print('Corrupted file deleted.');
+    // }
   }
 }
 
