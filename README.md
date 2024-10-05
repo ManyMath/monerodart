@@ -1,5 +1,18 @@
 # `monero`
-Monero Dart SDK.
+A Monero Dart library.
+
+## Binary management tool
+The `bin` folder contains a tool for managing Monero binaries, mostly for 
+downloading and verifying the latest release.  This can be helpful to quickly 
+set up a Monero node and wallet RPC server on a fresh installation for testing 
+and developing the library.  Install it with:
+```
+dart pub global activate monero
+```
+and then use it as in:
+```
+monero --help
+```
 
 ## Setup
 ### Dart 3.6
@@ -16,19 +29,17 @@ See [this tracking issue](https://github.com/flutter/flutter/issues/129757) and
  [this milestone](https://github.com/dart-lang/native/milestone/15) for the 
  eventual inclusion of native assets in a release.
 
-### Quick setup
+### Quick start
+With Dart ^3.6 installed and set as the default:
 ```
 git clone git@github.com:ManyMath/monerodart
 cd monerodart
-git submodule update --init --recursive
 dart pub get
-dart --enable-experiment=native-assets run bin/monero_example.dart
+dart --enable-experiment=native-assets run example/monero.dart
 ```
-<!--- TODO: Remove the `git submodule update --init --recursive` step after libxmr transitions from monero-serai to monero-wallet. --->
 and wait a moment as the native assets are built.
 
 ## Development
-
 - To generate `monero-rust_bindings_generated.dart` Dart bindings for C:
   ```
   dart --enable-experiment=native-assets run ffigen --config ffigen.yaml

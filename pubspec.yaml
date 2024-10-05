@@ -1,7 +1,10 @@
 name: monero
-description: Monero Dart SDK.
-version: 0.0.4-dev.1
+description: Monero Dart library.  Includes a separate commandline application for managing and verifying Monero binary release archives (install with `dart pub global activate monero` and use as in `monero --help`).
+version: 0.0.5-dev.1
 repository: https://github.com/ManyMath/monerodart
+
+executables:
+  monero:
 
 environment:
   sdk: ^3.6.0-0
