@@ -3,6 +3,9 @@ description: Monero Dart SDK.
 version: 0.0.4-dev.1
 repository: https://github.com/ManyMath/monerodart
 
+executables:
+  monero:
+
 environment:
   sdk: ^3.6.0-0
 
