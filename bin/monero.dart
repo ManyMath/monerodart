@@ -5,139 +5,146 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
-void main(List<String> arguments) async {
-  if (arguments.contains('-h') || arguments.contains('--help')) {
-    printHelp();
-    return;
-  }
-  if (arguments.contains('-s') || arguments.contains('--settings')) {
-    await editSettings();
-    return;
+void printHelp() {
+  print('''
+Monero:
+  An unofficial tool for downloading and managing official Monero binaries.
+
+Usage:
+  monero [options]
+Options:
+  -a, --auto                Skip prompts, use defaults (build from source).
+  -b, --build (default)     Build the latest Monero release from source.
+  -d, --dl, --download      Download and verify the latest Monero release.
+  -h, --help                Show this help message.
+  -r, --remote              Use the specified remote.
+  -s, --settings            Edit the current settings.
+Description:
+  This tool builds Monero from source and/or manages binary releases.
+''');
+}
+
+Future<bool> promptYesNo(String message) async {
+  print(message);
+  String? response = stdin.readLineSync();
+  return response != null && response.toLowerCase() == 'y';
+}
+
+Future<Map<String, dynamic>> setupSettings(
+    File settingsFile, bool autoMode, String? customRemote) async {
+  Directory parentDir = settingsFile.parent;
+  if (!await parentDir.exists()) {
+    await parentDir.create(recursive: true);
   }
 
-  bool autoMode = arguments.contains('-a') || arguments.contains('--auto');
-  String? customRemote;
-  if (arguments.contains('-r') || arguments.contains('--remote')) {
-    int index = arguments.indexOf('-r') != -1
-        ? arguments.indexOf('-r')
-        : arguments.indexOf('--remote');
-    if (index + 1 < arguments.length) {
-      customRemote = arguments[index + 1];
-    }
-  }
+  String defaultPath = Platform.isWindows
+      ? p.join(Platform.environment['APPDATA']!, 'Monero')
+      : p.join(Platform.environment['HOME']!, 'Monero');
 
-  final settingsFilePath = getSettingsFilePath();
-  File settingsFile = File(settingsFilePath);
-  Map<String, dynamic> settings = {};
-
-  // Load or create settings
-  if (await settingsFile.exists()) {
-    settings = jsonDecode(await settingsFile.readAsString());
+  String moneroDir;
+  if (autoMode) {
+    moneroDir = defaultPath;
+    print('Using default Monero directory: $moneroDir.');
   } else {
-    settings = await setupSettings(settingsFile, autoMode, customRemote);
+    print(
+        'Where should Monero binaries and repository be stored? (Press Enter to use the default: $defaultPath).');
+    String? inputPath = stdin.readLineSync();
+    moneroDir =
+        inputPath != null && inputPath.isNotEmpty ? inputPath : defaultPath;
   }
 
-  final binariesPath = settings['binariesPath'];
-  Directory binariesDir = Directory(binariesPath);
   String remoteUrl = customRemote ??
-      settings['remote'] ??
       'https://api.github.com/repos/monero-project/monero/releases/latest';
 
-  if (!await binariesDir.exists()) {
-    if (autoMode) {
-      await binariesDir.create(recursive: true);
-      print('Created binaries directory: $binariesPath');
-    } else {
-      print(
-          'The directory does not exist. Please create it or choose a different path.');
-      return;
-    }
+  Map<String, dynamic> settings = {'moneroDir': moneroDir, 'remote': remoteUrl};
+  await settingsFile.writeAsString(jsonEncode(settings));
+
+  return settings;
+}
+
+Future<void> editSettings() async {
+  final settingsFilePath = getSettingsFilePath();
+  File settingsFile = File(settingsFilePath);
+
+  if (!await settingsFile.exists()) {
+    print('Settings file does not exist. Setting up new settings...');
+    await setupSettings(settingsFile, false, null);
+    return;
   }
 
-  if (autoMode ||
-      (await promptYesNo(
-          'Would you like to check for the latest release? [y/N]'))) {
-    // Scan directory for Monero archives.  Used later to check if the latest
-    // archive has already been downloaded.
-    List<FileSystemEntity> files = await binariesDir.list().toList();
-    List<FileSystemEntity> archives = files.where((file) {
-      return file is File &&
-          RegExp(r'monero-.*-v\d+\.\d+\.\d+\.\d+\.(zip|tar\.bz2)')
-              .hasMatch(file.path);
-    }).toList();
+  Map<String, dynamic> settings = jsonDecode(await settingsFile.readAsString());
+  print('Current Monero directory: ${settings['moneroDir']}.');
+  print(
+      'Enter new path for Monero directory (or press Enter to keep current):');
+  String? newPath = stdin.readLineSync();
 
-    if (archives.isEmpty) {
-      print('No Monero archives found in $binariesPath.');
-    } else {
-      print('Found Monero archives:');
-      for (var archive in archives) {
-        print('- ${p.basename(archive.path)}');
-      }
-    }
-
-    await downloadLatestRelease(binariesPath, archives, autoMode, remoteUrl);
-
-    // Save the custom remote to settings if it was provided via the `-r` flag
-    if (customRemote != null) {
-      settings['remote'] = customRemote;
-      await settingsFile.writeAsString(jsonEncode(settings));
-    }
+  if (newPath != null && newPath.isNotEmpty) {
+    settings['moneroDir'] = newPath;
+    await settingsFile.writeAsString(jsonEncode(settings));
+    print('Settings updated successfully.');
   } else {
-    print('Operation cancelled.');
+    print('No changes made to settings.');
   }
 }
 
-Future<void> downloadLatestRelease(String binariesPath,
-    List<FileSystemEntity> archives, bool autoMode, String remoteUrl) async {
-  print('Using remote: $remoteUrl');
-  try {
-    final response = await http.get(Uri.parse(remoteUrl));
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final tagName = data['tag_name'];
-      final bodyHtml = data['body'];
+String getSettingsFilePath() {
+  if (Platform.isWindows) {
+    return p.join(Platform.environment['APPDATA']!, 'Monero', 'settings.json');
+  } else {
+    return p.join(
+        Platform.environment['HOME']!, '.config', 'Monero', 'settings.json');
+  }
+}
 
-      print('Latest release found: $tagName');
-      print('Parsing download links and hashes from release description...');
+Future<void> handleBuildMode(
+    String remoteUrl, String moneroDir, bool autoMode) async {
+  // Step 1: Check for dependencies.
+  if (Platform.isWindows) {
+    await checkWindowsDependencies();
+  } else if (Platform.isLinux || Platform.isMacOS) {
+    await checkUnixDependencies();
+  }
 
-      final downloadLinks = extractDownloadLinks(bodyHtml);
-      final releaseHashes = extractReleaseHashes(bodyHtml);
+  // Step 2: Select remote and clone the repository.
+  final tagName = await fetchLatestReleaseTag(remoteUrl);
+  final repoUrl =
+      'https://github.com/monero-project/monero.git'; // Correct remote for cloning.
+  await cloneMoneroRepo(repoUrl, tagName, moneroDir);
 
-      if (downloadLinks.isEmpty || releaseHashes.isEmpty) {
-        print('No download links or hashes found in the release description.');
-        return;
-      }
+  // Step 3: Build the project.
+  if (Platform.isWindows) {
+    await buildOnWindows(moneroDir);
+  } else if (Platform.isLinux || Platform.isMacOS) {
+    await buildOnUnix(moneroDir);
+  }
+}
 
-      String defaultFileName = getDefaultDownloadLink(downloadLinks);
-      FileSystemEntity? existingArchive = archives.firstWhere(
-          (archive) => p.basename(archive.path) == p.basename(defaultFileName),
-          orElse: () => File(''));
+Future<void> handleDownloadMode(String moneroDir, bool autoMode,
+    String remoteUrl, String? customRemote, File settingsFile) async {
+  Directory moneroDirectory = Directory(moneroDir);
+  List<FileSystemEntity> files = await moneroDirectory.list().toList();
+  List<FileSystemEntity> archives = files.where((file) {
+    return file is File &&
+        RegExp(r'monero-.*-v\d+\.\d+\.\d+\.\d+\.(zip|tar\.bz2)')
+            .hasMatch(file.path);
+  }).toList();
 
-      if (existingArchive != File('')) {
-        print(
-            'You already have the latest release downloaded: ${existingArchive.path}');
-        // Verify the file's hash for integrity
-        String? expectedHash = releaseHashes[p.basename(existingArchive.path)];
-        await verifyFileHash(existingArchive.path, expectedHash, autoMode);
-
-        // Ask if the user wants to extract the archive, even if it already exists
-        if (await promptYesNo(
-            'The archive is already downloaded. Do you want to extract the archive? [y/N]')) {
-          await extractArchive(
-              existingArchive.path, binariesPath, defaultFileName);
-        }
-        return;
-      }
-
-      print('Downloading the default file: $defaultFileName...');
-      await downloadFile(
-          defaultFileName, binariesPath, releaseHashes, autoMode);
-    } else {
-      print(
-          'Failed to fetch the latest release. HTTP status code: ${response.statusCode}');
+  if (archives.isEmpty) {
+    print('No Monero archives found in $moneroDir.');
+  } else {
+    print('Found Monero archives:');
+    for (var archive in archives) {
+      print('- ${p.basename(archive.path)}');
     }
-  } catch (e) {
-    print('An error occurred while fetching the latest release: $e');
+  }
+
+  await downloadLatestRelease(moneroDir, archives, autoMode, remoteUrl);
+
+  if (customRemote != null) {
+    Map<String, dynamic> settings =
+        jsonDecode(await settingsFile.readAsString());
+    settings['remote'] = customRemote;
+    await settingsFile.writeAsString(jsonEncode(settings));
   }
 }
 
@@ -150,19 +157,147 @@ Future<String> promptForCustomRemote() async {
     return 'https://api.github.com/repos/monero-project/monero/releases/latest';
   }
 
-  print('Validating remote URL: $customRemote');
+  print('Validating remote URL: $customRemote.');
   try {
     final response = await http.head(Uri.parse(customRemote));
     if (response.statusCode >= 200 && response.statusCode < 400) {
       print('Custom remote validated successfully.');
       return customRemote;
     } else {
-      print('Invalid remote URL. HTTP status code: ${response.statusCode}');
-      exit(1); // Terminate the program
+      print('Invalid remote URL. HTTP status code: ${response.statusCode}.');
+      exit(1); // Terminate the program.
     }
   } catch (e) {
-    print('An error occurred while validating the remote URL: $e');
-    exit(1); // Terminate the program
+    print('An error occurred while validating the remote URL: $e.');
+    exit(1); // Terminate the program.
+  }
+}
+
+Future<void> checkUnixDependencies() async {
+  const requiredDeps = [
+    'build-essential',
+    'cmake',
+    'pkg-config',
+    'libssl-dev',
+    'libzmq3-dev',
+    'libsodium-dev',
+    'libunwind8-dev',
+    'liblzma-dev',
+    'libreadline6-dev',
+    'libexpat1-dev',
+    'libpgm-dev',
+    'libhidapi-dev',
+    'libusb-1.0-0-dev',
+    'libprotobuf-dev',
+    'protobuf-compiler',
+    'libudev-dev',
+  ];
+
+  print('Checking Unix dependencies...');
+  final missingDeps = <String>[];
+  for (final dep in requiredDeps) {
+    final result = await Process.run('dpkg', ['-s', dep]);
+    if (result.exitCode != 0) {
+      missingDeps.add(dep);
+    }
+  }
+
+  if (missingDeps.isNotEmpty) {
+    print('The following dependencies are missing: ${missingDeps.join(', ')}.');
+    if (await promptYesNo(
+        'Would you like to install missing dependencies? [y/N]')) {
+      final installCommand = 'sudo apt-get install -y ${missingDeps.join(' ')}';
+      await Process.run('bash', ['-c', installCommand]);
+      print('Dependencies installed.');
+    } else {
+      print('Cannot proceed without installing dependencies.');
+      exit(1);
+    }
+  } else {
+    print('All dependencies are installed.');
+  }
+}
+
+Future<void> checkWindowsDependencies() async {
+  const requiredDeps = [
+    'cmake',
+    'mingw-w64',
+    'boost',
+    'openssl',
+    'zeromq',
+    'libsodium',
+  ];
+
+  print('Checking Windows dependencies...');
+  final missingDeps = <String>[];
+
+  for (final dep in requiredDeps) {
+    final result = await Process.run('where', [dep], runInShell: true);
+    if (result.exitCode != 0) {
+      missingDeps.add(dep);
+    }
+  }
+
+  if (missingDeps.isNotEmpty) {
+    print('The following dependencies are missing: ${missingDeps.join(', ')}.');
+    print(
+        'Please manually install these dependencies via MSYS2 or appropriate package managers.');
+    exit(1);
+  } else {
+    print('All dependencies are installed.');
+  }
+}
+
+Future<String> fetchLatestReleaseTag(String remoteUrl) async {
+  final response = await http.get(Uri.parse(remoteUrl));
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['tag_name'];
+  } else {
+    print('Failed to fetch the latest release tag.');
+    exit(1);
+  }
+}
+
+Future<void> cloneMoneroRepo(
+    String repoUrl, String tagName, String moneroDir) async {
+  final cloneDir = p.join(moneroDir, 'monero');
+  print('Cloning Monero repository...');
+  final cloneCommand =
+      'git clone --branch $tagName --recursive $repoUrl $cloneDir';
+  final result = await Process.run('bash', ['-c', cloneCommand]);
+
+  if (result.exitCode == 0) {
+    print('Repository cloned successfully to $cloneDir.');
+  } else {
+    print('Failed to clone the repository: ${result.stderr}.');
+    exit(1);
+  }
+}
+
+Future<void> buildOnUnix(String moneroDir) async {
+  print('Building Monero on Unix...');
+  final buildCommand = 'cd $moneroDir/monero && make';
+  final result = await Process.run('bash', ['-c', buildCommand]);
+
+  if (result.exitCode == 0) {
+    print('Monero built successfully.');
+  } else {
+    print('Failed to build Monero: ${result.stderr}.');
+    exit(1);
+  }
+}
+
+Future<void> buildOnWindows(String moneroDir) async {
+  print('Building Monero on Windows...');
+  final buildCommand = 'cd $moneroDir\\monero && make release-static-win64';
+  final result = await Process.run('cmd', ['/c', buildCommand]);
+
+  if (result.exitCode == 0) {
+    print('Monero built successfully.');
+  } else {
+    print('Failed to build Monero: ${result.stderr}.');
+    exit(1);
   }
 }
 
@@ -183,27 +318,78 @@ Future<void> downloadFile(String url, String binariesPath,
       receivedBytes += chunk.length;
       if (totalBytes != 0) {
         double progress = (receivedBytes / totalBytes) * 100;
-        stdout.write('\rProgress: ${progress.toStringAsFixed(2)}%');
+        stdout.write('\rProgress: ${progress.toStringAsFixed(2)}%.');
       }
     },
     onDone: () async {
       File file = File(filePath);
       await file.writeAsBytes(bytes);
-      print('\nDownload completed: $filePath');
+      print('\nDownload completed: $filePath.');
 
       String? expectedHash = releaseHashes[fileName];
       await verifyFileHash(filePath, expectedHash, autoMode);
 
-      // Ask if the user wants to extract the archive after verification
+      // Ask if the user wants to extract the archive after verification.
       if (await promptYesNo('Do you want to extract the archive? [y/N]')) {
         await extractArchive(filePath, binariesPath, fileName);
       }
     },
     onError: (e) {
-      print('\nAn error occurred while downloading the file: $e');
+      print('\nAn error occurred while downloading the file: $e.');
     },
     cancelOnError: true,
   );
+}
+
+Future<void> downloadLatestRelease(String moneroDir,
+    List<FileSystemEntity> archives, bool autoMode, String remoteUrl) async {
+  print('Using remote: $remoteUrl.');
+  try {
+    final response = await http.get(Uri.parse(remoteUrl));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final tagName = data['tag_name'];
+      final bodyHtml = data['body'];
+
+      print('Latest release found: $tagName.');
+      print('Parsing download links and hashes from release description...');
+
+      final downloadLinks = extractDownloadLinks(bodyHtml);
+      final releaseHashes = extractReleaseHashes(bodyHtml);
+
+      if (downloadLinks.isEmpty || releaseHashes.isEmpty) {
+        print('No download links or hashes found in the release description.');
+        return;
+      }
+
+      String defaultFileName = getDefaultDownloadLink(downloadLinks);
+      FileSystemEntity? existingArchive = archives.firstWhere(
+          (archive) => p.basename(archive.path) == p.basename(defaultFileName),
+          orElse: () => File(''));
+
+      if (existingArchive != File('')) {
+        print(
+            'You already have the latest release downloaded: ${existingArchive.path}.');
+        String? expectedHash = releaseHashes[p.basename(existingArchive.path)];
+        await verifyFileHash(existingArchive.path, expectedHash, autoMode);
+
+        if (await promptYesNo(
+            'The archive is already downloaded. Do you want to extract the archive? [y/N]')) {
+          await extractArchive(
+              existingArchive.path, moneroDir, defaultFileName);
+        }
+        return;
+      }
+
+      print('Downloading the default file: $defaultFileName...');
+      await downloadFile(defaultFileName, moneroDir, releaseHashes, autoMode);
+    } else {
+      print(
+          'Failed to fetch the latest release. HTTP status code: ${response.statusCode}.');
+    }
+  } catch (e) {
+    print('An error occurred while fetching the latest release: $e.');
+  }
 }
 
 Future<void> extractArchive(
@@ -215,38 +401,42 @@ Future<void> extractArchive(
     } else if (archiveExtension == '.bz2') {
       await _extractTarBz2(filePath, extractPath);
     } else {
-      print('Unsupported archive format: $archiveExtension');
+      print('Unsupported archive format: $archiveExtension.');
       return;
     }
   } catch (e) {
-    print('An error occurred while extracting the archive: $e');
+    print('An error occurred while extracting the archive: $e.');
   }
 }
 
 Future<void> _extractZip(String zipFilePath, String extractPath) async {
   print('Extracting zip archive: $zipFilePath...');
-  // Use the `unzip` command with `-o` to overwrite files
   final result =
       await Process.run('unzip', ['-o', zipFilePath, '-d', extractPath]);
 
   if (result.exitCode == 0) {
     print('Extraction completed successfully.');
   } else {
-    print('Failed to extract zip archive: ${result.stderr}');
+    print('Failed to extract zip archive: ${result.stderr}.');
   }
 }
 
 Future<void> _extractTarBz2(String tarFilePath, String extractPath) async {
   print('Extracting tar.bz2 archive: $tarFilePath...');
-  // Use the `tar` command with `-xjf` to extract and `--overwrite` to overwrite files
   final result = await Process.run(
       'tar', ['-xjf', tarFilePath, '-C', extractPath, '--overwrite']);
 
   if (result.exitCode == 0) {
     print('Extraction completed successfully.');
   } else {
-    print('Failed to extract tar.bz2 archive: ${result.stderr}');
+    print('Failed to extract tar.bz2 archive: ${result.stderr}.');
   }
+}
+
+Future<String> calculateFileHash(String filePath) async {
+  File file = File(filePath);
+  var bytes = await file.readAsBytes();
+  return sha256.convert(bytes).toString();
 }
 
 Future<void> verifyFileHash(
@@ -258,23 +448,11 @@ Future<void> verifyFileHash(
 
   String actualHash = await calculateFileHash(filePath);
   if (actualHash == expectedHash) {
-    print('Hash verification succeeded for: $filePath');
+    print('Hash verification succeeded for: $filePath.');
   } else {
     print(
-        'Hash mismatch for $filePath. Expected: $expectedHash, Actual: $actualHash');
-    // if (!autoMode &&
-    //     await promptYesNo(
-    //         'Would you like to delete the corrupted file? [y/N]')) {
-    //   await File(filePath).delete();
-    //   print('Corrupted file deleted.');
-    // }
+        'Hash mismatch for $filePath. Expected: $expectedHash, Actual: $actualHash.');
   }
-}
-
-Future<String> calculateFileHash(String filePath) async {
-  File file = File(filePath);
-  var bytes = await file.readAsBytes();
-  return sha256.convert(bytes).toString();
 }
 
 List<String> extractDownloadLinks(String bodyHtml) {
@@ -329,101 +507,67 @@ String getDefaultDownloadLink(List<String> downloadLinks) {
       orElse: () => downloadLinks.isNotEmpty ? downloadLinks[0] : '');
 }
 
-Future<bool> promptYesNo(String message) async {
-  print(message);
-  String? response = stdin.readLineSync();
-  return response != null && response.toLowerCase() == 'y';
-}
-
-Future<Map<String, dynamic>> setupSettings(
-    File settingsFile, bool autoMode, String? customRemote) async {
-  Directory parentDir = settingsFile.parent;
-  if (!await parentDir.exists()) {
-    await parentDir.create(recursive: true);
+void main(List<String> arguments) async {
+  if (arguments.contains('-h') || arguments.contains('--help')) {
+    printHelp();
+    return;
   }
-
-  String defaultPath = Platform.isWindows
-      ? p.join(Platform.environment['APPDATA']!, 'Monero')
-      : p.join(Platform.environment['HOME']!, 'Monero');
-
-  String binariesPath;
-  if (autoMode) {
-    binariesPath = defaultPath;
-    print('Using default binaries path: $binariesPath');
-  } else {
-    print(
-        'Where should Monero binaries be stored? (Press Enter to use the default: $defaultPath)');
-    String? inputPath = stdin.readLineSync();
-    binariesPath =
-        inputPath != null && inputPath.isNotEmpty ? inputPath : defaultPath;
-  }
-
-  String remoteUrl = customRemote ??
-      'https://api.github.com/repos/monero-project/monero/releases/latest';
-
-  Map<String, dynamic> settings = {
-    'binariesPath': binariesPath,
-    'remote': remoteUrl
-  };
-  await settingsFile.writeAsString(jsonEncode(settings));
-
-  return settings;
-}
-
-Future<void> editSettings() async {
-  final settingsFilePath = getSettingsFilePath();
-  File settingsFile = File(settingsFilePath);
-
-  if (!await settingsFile.exists()) {
-    print('Settings file does not exist. Setting up new settings...');
-    await setupSettings(settingsFile, false, null);
+  if (arguments.contains('-s') || arguments.contains('--settings')) {
+    await editSettings();
     return;
   }
 
-  Map<String, dynamic> settings = jsonDecode(await settingsFile.readAsString());
-  print('Current binaries path: ${settings['binariesPath']}');
-  print('Enter new path for binaries (or press Enter to keep current):');
-  String? newPath = stdin.readLineSync();
-
-  if (newPath != null && newPath.isNotEmpty) {
-    settings['binariesPath'] = newPath;
-    await settingsFile.writeAsString(jsonEncode(settings));
-    print('Settings updated successfully.');
-  } else {
-    print('No changes made to settings.');
+  bool autoMode = arguments.contains('-a') || arguments.contains('--auto');
+  bool buildMode = arguments.contains('-b') || arguments.contains('--build');
+  bool downloadMode = arguments.contains('-d') ||
+      arguments.contains('--dl') ||
+      arguments.contains('--download');
+  String? customRemote;
+  if (arguments.contains('-r') || arguments.contains('--remote')) {
+    int index = arguments.indexOf('-r') != -1
+        ? arguments.indexOf('-r')
+        : arguments.indexOf('--remote');
+    if (index + 1 < arguments.length) {
+      customRemote = arguments[index + 1];
+    }
   }
-}
 
-String getSettingsFilePath() {
-  if (Platform.isWindows) {
-    return p.join(Platform.environment['APPDATA']!, 'monero', 'settings.json');
+  final settingsFilePath = getSettingsFilePath();
+  File settingsFile = File(settingsFilePath);
+  Map<String, dynamic> settings = {};
+
+  // Load or create settings.
+  if (await settingsFile.exists()) {
+    settings = jsonDecode(await settingsFile.readAsString());
   } else {
-    return p.join(
-        Platform.environment['HOME']!, '.config', 'monero', 'settings.json');
+    settings = await setupSettings(settingsFile, autoMode, customRemote);
   }
-}
 
-void printHelp() {
-  print('''
-Monero:
-  An unofficial tool for downloading and managing official Monero binaries.
+  final moneroDir = settings['moneroDir'];
+  Directory moneroDirectory = Directory(
+      moneroDir); // TODO: Make this safe when the settings file is corrupted.
+  String remoteUrl = customRemote ??
+      settings['remote'] ??
+      'https://api.github.com/repos/monero-project/monero/releases/latest';
 
-Usage:
-  monero [options]
-Options:
-  -a, --auto                Skip prompts, use defaults.
-  -h, --help                Show this help message.
-  -r, --remote              Use the specified remote.
-  -s, --settings            Edit the current settings.
-Description:
-  This tool checks and manages Monero binary releases.
-Overview:
-  - On first run, the tool will where to store Monero binaries (unless on auto).
-  - Supports any Git remote URL for Monero releases.
-  - Fetches the latest Monero release tag and binary release archive hashes.
-  - Checks if any of the latest archives have already been downloaded.
-  - Downloads the latest release archive if not already downloaded.
-  - Compares the GitHub release hash with the hash from getmonero.org.
-  - Verifies the integrity of the downloaded archive using the expected hash.
-''');
+  if (!await moneroDirectory.exists()) {
+    await moneroDirectory.create(recursive: true);
+    print('Created Monero directory: $moneroDir.');
+  }
+
+  if (((autoMode || buildMode) && !downloadMode) ||
+      await promptYesNo(
+          "Would you like to build Monero's latest release from source? [y/N]")) {
+    await handleBuildMode(remoteUrl, moneroDir, autoMode);
+  }
+
+  if (autoMode ||
+      downloadMode ||
+      (await promptYesNo(
+          'Would you like to check for the latest release? [y/N]'))) {
+    await handleDownloadMode(
+        moneroDir, autoMode, remoteUrl, customRemote, settingsFile);
+  } else {
+    print('Operation cancelled.');
+  }
 }
