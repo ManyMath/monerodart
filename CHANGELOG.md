@@ -1,3 +1,7 @@
+## 0.0.5
+
+- Commandline interface builds Monero from source by default.
+
 ## 0.0.4
 
 - Example fix

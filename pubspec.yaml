@@ -1,6 +1,6 @@
 name: monero
-description: Monero Dart library.  Uses Rust bound via FFI.  Includes a separate commandline application for managing and verifying Monero binary release archives (install with `dart pub global activate monero` and use as in `monero --help`).
-version: 0.0.4
+description: Monero Dart library.  Uses Rust bound via FFI.  Includes a separate optional commandline interface for building the latest Monero release from source (by default) and/or optionally managing and verifying binary release archives (install with `dart pub global activate monero` and use as in `monero --help`).
+version: 0.0.5-dev.2
 repository: https://github.com/ManyMath/monerodart
 
 executables:
